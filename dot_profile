@@ -1,0 +1,17 @@
+if [ -n "${BASH_VERSION:-}" ] && [ -f "$HOME/.bashrc" ]; then
+  . "$HOME/.bashrc"
+fi
+
+if [ -d "$HOME/bin" ]; then
+  PATH="$HOME/bin:$PATH"
+fi
+if [ -d "$HOME/.local/bin" ]; then
+  PATH="$HOME/.local/bin:$PATH"
+fi
+
+if [ -r "$HOME/.local/bin/env" ]; then
+  . "$HOME/.local/bin/env"
+fi
+if [ -r "$HOME/.cargo/env" ]; then
+  . "$HOME/.cargo/env"
+fi

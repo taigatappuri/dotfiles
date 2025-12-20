@@ -1,0 +1,94 @@
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
+
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_CUSTOM="${ZSH_CUSTOM:-$ZSH/custom}"
+
+if [[ -r "$ZSH_CUSTOM/themes/powerlevel10k/powerlevel10k.zsh-theme" ]]; then
+  ZSH_THEME="powerlevel10k/powerlevel10k"
+else
+  ZSH_THEME="robbyrussell"
+fi
+export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+
+ZSH_DISABLE_COMPFIX=true
+
+plugins=(
+  git
+  chezmoi
+  sudo
+  extract
+  z
+  python
+  pip
+  docker docker-compose
+)
+
+if command -v command-not-found >/dev/null 2>&1; then
+  plugins+=(command-not-found)
+fi
+if command -v fzf >/dev/null 2>&1; then
+  plugins+=(fzf)
+fi
+
+zstyle ':omz:update' mode reminder
+zstyle ':omz:update' frequency 7
+zstyle ':omz:update' verbose minimal
+
+if [[ -r "$ZSH/oh-my-zsh.sh" ]]; then
+  source "$ZSH/oh-my-zsh.sh"
+else
+  echo "oh-my-zsh not found: $ZSH" >&2
+fi
+
+if command -v uv >/dev/null 2>&1; then
+  eval "$(uv generate-shell-completion zsh)"
+fi
+
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+if [[ -r "$HOME/.local/bin/env" ]]; then
+  . "$HOME/.local/bin/env"
+fi
+
+if [[ -r "$ZSH_CUSTOM/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh" ]]; then
+  source "$ZSH_CUSTOM/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh"
+fi
+if [[ -r "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]]; then
+  source "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+fi
+
+# Git エイリアス
+alias g='git'
+alias gs='git status -sb'
+alias gl='git log --oneline --graph --decorate'
+alias gd='git diff'
+alias gdc='git diff --cached'
+alias ga='git add'
+alias gc='git commit'
+alias gco='git checkout'
+alias gb='git branch'
+alias gp='git push'
+alias gpl='git pull --rebase'
+
+# ディレクトリ名を指定して移動（同名が複数ある場合は候補を表示）
+cdd() {
+  local name="${1:-A}"
+  local -a matches
+
+  matches=("${(@f)$(find . -type d -name "$name" -print 2>/dev/null)}")
+
+  if [[ "${#matches[@]}" -eq 1 ]]; then
+    cd -- "${matches[1]}" || return
+  elif [[ "${#matches[@]}" -eq 0 ]]; then
+    echo "ディレクトリ '$name' が見つかりません"
+    return 1
+  else
+    echo "ディレクトリ '$name' が複数見つかりました:"
+    printf '  %s\n' "${matches[@]}"
+    return 1
+  fi
+}
