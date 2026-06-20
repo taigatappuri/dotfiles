@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CHEZMOI_VERSION: 2.70.1
+  CHEZMOI_SHA256: 3bd054238e2a95548eee62a6c5b4d9d1352f2c6c69c6d32f3d1964878398f91a
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Install validation tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y shellcheck shfmt zsh
+
+          archive="chezmoi_${CHEZMOI_VERSION}_linux_amd64.tar.gz"
+          curl --fail --location --silent --show-error \
+            "https://github.com/twpayne/chezmoi/releases/download/v${CHEZMOI_VERSION}/${archive}" \
+            --output "$archive"
+          printf '%s  %s\n' "$CHEZMOI_SHA256" "$archive" | sha256sum --check
+          sudo tar --extract --gzip --file "$archive" --directory /usr/local/bin chezmoi
+
+      - name: Validate CI contract
+        run: bash tests/ci-contract.sh
+
+      - name: Run ShellCheck
+        run: |
+          shellcheck \
+            install.sh \
+            uninstall.sh \
+            dot_chezmoiscripts/run_once_10-install-zsh-deps.sh \
+            dot_local/bin/env \
+            tests/ci-contract.sh \
+            tests/smoke.sh
+
+      - name: Check shell formatting
+        run: |
+          shfmt -d -i 2 -ci \
+            install.sh \
+            uninstall.sh \
+            dot_chezmoiscripts/run_once_10-install-zsh-deps.sh \
+            dot_local/bin/env \
+            tests/ci-contract.sh \
+            tests/smoke.sh
+
+      - name: Validate shell syntax
+        run: |
+          bash -n \
+            install.sh \
+            uninstall.sh \
+            dot_chezmoiscripts/run_once_10-install-zsh-deps.sh \
+            tests/ci-contract.sh \
+            tests/smoke.sh
+          sh -n dot_local/bin/env dot_profile
+          zsh -n dot_zshrc dot_p10k.zsh
+
+      - name: Validate chezmoi source
+        run: |
+          set -euo pipefail
+          chezmoi --source "$PWD" managed | tee /tmp/chezmoi-managed.txt
+          if grep -Eq '^(README\.md|memo\.md|docs|tests)(/|$)' /tmp/chezmoi-managed.txt; then
+            echo 'Repository-only files are included in the chezmoi managed set' >&2
+            exit 1
+          fi
+
+      - name: Scan for secrets
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  smoke-test:
+    name: Smoke test (${{ matrix.image }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - ubuntu:24.04
+          - fedora:latest
+          - archlinux:latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+
+      - name: Apply dotfiles in container
+        run: |
+          docker run --rm \
+            --env "CI_OS=${{ matrix.image }}" \
+            --volume "$PWD:/workspace:ro" \
+            "${{ matrix.image }}" \
+            bash /workspace/tests/smoke.sh

@@ -1,5 +1,10 @@
 .git
 .git/
 .gitignore
+.github/
+README.md
+memo.md
+tests/
+docs/
 install.sh
 uninstall.sh
