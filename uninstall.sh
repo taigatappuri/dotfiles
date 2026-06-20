@@ -41,7 +41,7 @@ run_root() {
     sudo "$@"
     return $?
   fi
-  log "警告: sudo が見つからないため、root 権限が必要な処理をスキップします: $*"
+  log "[WARN]: sudo not found; skipping command that requires root: $*"
   return 1
 }
 
@@ -49,22 +49,22 @@ set_default_shell_to_bash() {
   local bash_path
   bash_path="$(command -v bash || true)"
   if [[ -z "$bash_path" ]]; then
-    log "警告: bash が見つからないため、デフォルトシェル変更をスキップします"
+    log "[WARN]: bash not found; skipping default shell change"
     return 0
   fi
 
   if have_cmd chsh && chsh -s "$bash_path" "$USER" 2>/dev/null; then
-    log "デフォルトシェルを bash に設定しました: $bash_path"
+    log "Default shell set to bash: $bash_path"
     return 0
   fi
 
   if have_cmd usermod && run_root usermod -s "$bash_path" "$USER" 2>/dev/null; then
-    log "デフォルトシェルを bash に設定しました（usermod）: $bash_path"
+    log "Default shell set to bash (usermod): $bash_path"
     return 0
   fi
 
-  log "警告: デフォルトシェルを自動で変更できませんでした"
-  log "手動で実行してください: chsh -s \"$bash_path\""
+  log "[WARN]: failed to change the default shell automatically"
+  log "Run manually: chsh -s \"$bash_path\""
   return 0
 }
 
@@ -95,7 +95,7 @@ uninstall_zsh_package() {
     return 0
   fi
 
-  log "警告: パッケージマネージャが見つからないため、zsh の削除をスキップします"
+  log "[WARN]: package manager not found; skipping zsh removal"
   return 0
 }
 
@@ -121,7 +121,7 @@ while [[ $# -gt 0 ]]; do
       force=true
       shift
       ;;
-    -h|--help)
+    -h | --help)
       usage
       exit 0
       ;;
@@ -133,29 +133,29 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ "$force" != "true" ]]; then
-  log "これから実行する内容:"
+  log "The following actions will be performed:"
   if [[ -n "$backup_root" ]]; then
-    log "- 管理対象を退避: $backup_root"
+    log "- Back up managed files to: $backup_root"
   else
-    log "- 管理対象を削除（退避なし）"
+    log "- Delete managed files without a backup"
   fi
-  log "- oh-my-zsh を削除: $HOME/.oh-my-zsh"
-  log "- zsh 設定関連を削除: $HOME/.zshrc 等"
-  log "- chezmoi データを削除: $HOME/.config/chezmoi 等"
-  log "- デフォルトシェルを bash に変更（可能なら）"
-  log "- zsh をアンインストール（可能なら）"
+  log "- Remove oh-my-zsh: $HOME/.oh-my-zsh"
+  log "- Remove zsh configuration files such as $HOME/.zshrc"
+  log "- Remove chezmoi data such as $HOME/.config/chezmoi"
+  log "- Change the default shell to bash when possible"
+  log "- Uninstall zsh when possible"
   if [[ "$purge" == "true" ]]; then
-    log "- `chezmoi purge` を実行"
+    log '- Run chezmoi purge'
   fi
-  read -r -p "続行しますか？ [y/N]: " answer
+  read -r -p "Continue? [y/N]: " answer
   case "${answer}" in
-    y|Y|yes|YES ) ;;
-    * ) exit 0 ;;
+    y | Y | yes | YES) ;;
+    *) exit 0 ;;
   esac
 fi
 
 if [[ "$purge" == "true" ]] && have_cmd chezmoi; then
-  log "`chezmoi purge` を実行します..."
+  log 'Running chezmoi purge...'
   chezmoi purge || true
 fi
 
@@ -176,19 +176,19 @@ for rel in "${managed[@]:-}"; do
 done
 
 sorted_managed_files="$(
-  printf '%s\n' "${managed_files[@]:-}" \
-    | awk '{ printf "%d\t%s\n", length($0), $0 }' \
-    | sort -rn \
-    | cut -f2- \
-    | sed '/^$/d'
+  printf '%s\n' "${managed_files[@]:-}" |
+    awk '{ printf "%d\t%s\n", length($0), $0 }' |
+    sort -rn |
+    cut -f2- |
+    sed '/^$/d'
 )"
 
 sorted_managed_dirs="$(
-  printf '%s\n' "${managed_dirs[@]:-}" \
-    | awk '{ printf "%d\t%s\n", length($0), $0 }' \
-    | sort -rn \
-    | cut -f2- \
-    | sed '/^$/d'
+  printf '%s\n' "${managed_dirs[@]:-}" |
+    awk '{ printf "%d\t%s\n", length($0), $0 }' |
+    sort -rn |
+    cut -f2- |
+    sed '/^$/d'
 )"
 
 if [[ -n "$backup_root" ]]; then
@@ -208,8 +208,8 @@ while IFS= read -r rel; do
   if [[ -n "$backup_root" ]]; then
     dst="${backup_root}/${rel}"
     if [[ "$backup_root" == "$src" || "$backup_root" == "$src/"* ]]; then
-      log "退避先が退避対象の配下にあります: $backup_root"
-      log "退避先を $HOME 配下の別ディレクトリに変更してから再実行してください"
+      log "Backup destination is inside a managed path: $backup_root"
+      log "Choose another destination under $HOME and run the command again"
       exit 1
     fi
     mkdir -p "$(dirname "$dst")"
@@ -226,28 +226,28 @@ while IFS= read -r rel; do
   rmdir "${HOME}/${rel}" 2>/dev/null || true
 done <<<"${sorted_managed_dirs:-}"
 
-log "oh-my-zsh を削除します..."
+log "Removing oh-my-zsh..."
 rm -rf "$HOME/.oh-my-zsh"
 
-log "zsh 設定関連のファイルを削除します..."
+log "Removing zsh configuration files..."
 rm -f "$HOME/.zshrc" "$HOME/.p10k.zsh" "$HOME/.zsh_history" "$HOME/.z" || true
 rm -f "$HOME/.zcompdump" "$HOME/.zcompdump-"* || true
 
-log "chezmoi のデータを削除します..."
+log "Removing chezmoi data..."
 rm -rf "$HOME/.chezmoiscripts" "$HOME/.config/chezmoi" "$HOME/.local/share/chezmoi" "$HOME/.cache/chezmoi" || true
 
 if have_cmd chezmoi; then
   chezmoi_path="$(command -v chezmoi || true)"
   if [[ "$chezmoi_path" == "$HOME/.local/bin/chezmoi" ]]; then
-    log "chezmoi を削除します: $chezmoi_path"
+    log "Removing chezmoi: $chezmoi_path"
     rm -f "$chezmoi_path"
   fi
 fi
 
-log "デフォルトシェルを bash に戻します..."
+log "Restoring bash as the default shell..."
 set_default_shell_to_bash
 
-log "zsh をアンインストールします..."
+log "Uninstalling zsh..."
 uninstall_zsh_package
 
-log "完了しました（必要ならログアウト/再ログインしてください）"
+log "Uninstall completed (log out and back in if required)"
