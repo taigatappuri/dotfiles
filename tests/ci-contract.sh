@@ -6,6 +6,7 @@ readonly REPOSITORY_ROOT
 readonly WORKFLOW_FILE="$REPOSITORY_ROOT/.github/workflows/ci.yml"
 readonly DEPENDABOT_FILE="$REPOSITORY_ROOT/.github/dependabot.yml"
 readonly SMOKE_TEST_FILE="$REPOSITORY_ROOT/tests/smoke.sh"
+readonly UPDATE_FILE="$REPOSITORY_ROOT/update.sh"
 readonly CHEZMOI_IGNORE_FILE="$REPOSITORY_ROOT/.chezmoiignore"
 readonly README_FILE="$REPOSITORY_ROOT/README.md"
 BACKTICK="$(printf '\140')"
@@ -57,6 +58,9 @@ assert_actions_pinned() {
 }
 
 assert_file "$SMOKE_TEST_FILE"
+assert_file "$UPDATE_FILE"
+[[ -x "$UPDATE_FILE" ]] || fail 'update.sh is not executable'
+bash -n "$UPDATE_FILE"
 
 assert_contains "$SMOKE_TEST_FILE" "CHEZMOI_VERSION=\"\${CHEZMOI_VERSION:-2.70.1}\""
 assert_contains "$SMOKE_TEST_FILE" '3bd054238e2a95548eee62a6c5b4d9d1352f2c6c69c6d32f3d1964878398f91a'
@@ -67,6 +71,13 @@ assert_contains "$SMOKE_TEST_FILE" 'cmp --silent'
 assert_contains "$SMOKE_TEST_FILE" "chezmoi --source \"\$source_copy\" diff"
 assert_contains "$SMOKE_TEST_FILE" "chmod 0755 \"\$temporary_dir\""
 
+assert_contains "$UPDATE_FILE" 'Configured:'
+assert_contains "$UPDATE_FILE" 'Warnings:'
+assert_contains "$UPDATE_FILE" 'No unapplied settings found.'
+assert_contains "$UPDATE_FILE" 'chezmoi -S "$script_dir" apply'
+assert_contains "$UPDATE_FILE" 'dotfiles applied'
+assert_contains "$UPDATE_FILE" 'zsh dependencies installed'
+
 assert_not_contains "$REPOSITORY_ROOT/uninstall.sh" "log \"- ${BACKTICK}chezmoi purge${BACKTICK}"
 assert_not_contains "$REPOSITORY_ROOT/uninstall.sh" "log \"${BACKTICK}chezmoi purge${BACKTICK}"
 
@@ -74,6 +85,7 @@ assert_contains "$CHEZMOI_IGNORE_FILE" 'README.md'
 assert_contains "$CHEZMOI_IGNORE_FILE" 'memo.md'
 assert_contains "$CHEZMOI_IGNORE_FILE" 'tests/'
 assert_contains "$CHEZMOI_IGNORE_FILE" 'docs/'
+assert_contains "$CHEZMOI_IGNORE_FILE" 'update.sh'
 
 assert_file "$WORKFLOW_FILE"
 assert_file "$DEPENDABOT_FILE"
@@ -100,6 +112,9 @@ assert_file "$README_FILE"
 assert_contains "$README_FILE" 'Ubuntu'
 assert_contains "$README_FILE" 'Fedora'
 assert_contains "$README_FILE" 'Arch Linux'
+assert_contains "$README_FILE" '## 更新'
+assert_contains "$README_FILE" './update.sh'
+assert_contains "$README_FILE" '未適用の設定'
 assert_not_contains "$README_FILE" '## CI'
 assert_not_contains "$README_FILE" 'bash tests/ci-contract.sh'
 

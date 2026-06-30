@@ -24,6 +24,17 @@ cd ~/dotfiles
 ./install.sh https://github.com/taigatappuri/dotfiles.git
 ```
 
+## 更新
+
+既にクローン済みのリポジトリから、現在の端末に未適用の設定だけを適用します。
+
+```bash
+cd ~/dotfiles
+./update.sh
+```
+
+`update.sh`はパッケージ、ログインシェル、chezmoi、dotfiles、oh-my-zshとZshプラグインを確認し、必要なものだけ設定します。終了前に今回設定した内容と、自動対応できなかった警告を表示します。
+
 ## アンインストール
 
 削除対象とオプションを確認してから実行します。

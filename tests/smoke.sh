@@ -112,6 +112,21 @@ verify_idempotency() {
   [[ -z "$diff_output" ]] || fail "A diff remains after apply:\n$diff_output"
 }
 
+verify_update_script() {
+  local source_copy="$1"
+  local before_hashes="$2"
+  local after_hashes="$3"
+  local update_output
+
+  update_output="$(run_as_test_user "$source_copy/update.sh" 2>&1)"
+  printf '%s\n' "$update_output" | grep -Eq 'Configured:|No unapplied settings found.' ||
+    fail "update.sh did not print a summary:\n$update_output"
+
+  hash_managed_files "$after_hashes"
+  cmp --silent "$before_hashes" "$after_hashes" ||
+    fail 'Managed files changed after update.sh'
+}
+
 verify_shell_syntax() {
   bash -n "$TEST_HOME/.bashrc"
   sh -n "$TEST_HOME/.profile" "$TEST_HOME/.local/bin/env"
@@ -144,6 +159,7 @@ main() (
   apply_dotfiles "$source_copy"
   hash_managed_files "$before_hashes"
   verify_idempotency "$source_copy" "$before_hashes" "$after_hashes"
+  verify_update_script "$source_copy" "$before_hashes" "$after_hashes"
   verify_shell_syntax
 
   log 'Smoke test passed'
