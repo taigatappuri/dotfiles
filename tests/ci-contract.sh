@@ -57,10 +57,92 @@ assert_actions_pinned() {
   done < <(sed -nE 's/^[[:space:]]*uses:[[:space:]]*([^[:space:]#]+).*/\1/p' "$WORKFLOW_FILE")
 }
 
+assert_update_recovers_from_unusable_chezmoi() {
+  local temporary_dir
+  local stub_bin
+  local test_home
+  local output
+
+  temporary_dir="$(mktemp -d)"
+  trap 'rm -rf "$temporary_dir"' RETURN
+  stub_bin="$temporary_dir/bin"
+  test_home="$temporary_dir/home"
+  mkdir -p \
+    "$stub_bin" \
+    "$test_home/.oh-my-zsh/custom/themes/powerlevel10k" \
+    "$test_home/.oh-my-zsh/custom/plugins/zsh-autosuggestions" \
+    "$test_home/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting"
+
+  cat >"$stub_bin/zsh" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+  cat >"$stub_bin/git" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+  cat >"$stub_bin/getent" <<'EOF'
+#!/usr/bin/env bash
+if [[ "$1" == passwd ]]; then
+  printf '%s:x:1000:1000:Test:%s:%s/zsh\n' "$2" "$HOME" "$(dirname "$0")"
+fi
+EOF
+  cat >"$stub_bin/chezmoi" <<'EOF'
+#!/usr/bin/env bash
+printf 'unusable chezmoi\n' >&2
+exit 1
+EOF
+  cat >"$stub_bin/curl" <<'EOF'
+#!/usr/bin/env bash
+cat <<'INSTALLER'
+#!/bin/sh
+set -eu
+bin_dir=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -b)
+      bin_dir="$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+mkdir -p "$bin_dir"
+cat >"$bin_dir/chezmoi" <<'CHEZMOI'
+#!/usr/bin/env bash
+if [[ "$1" == "--version" ]]; then
+  printf 'chezmoi version test\n'
+  exit 0
+fi
+if [[ "$*" == *" diff" ]]; then
+  exit 0
+fi
+if [[ "$*" == *" apply" ]]; then
+  exit 0
+fi
+exit 0
+CHEZMOI
+chmod +x "$bin_dir/chezmoi"
+INSTALLER
+EOF
+  chmod +x "$stub_bin/"*
+
+  output="$(
+    HOME="$test_home" USER="dotfiles-ci" ZSH="$test_home/.oh-my-zsh" \
+      PATH="$stub_bin:/usr/bin:/bin" "$UPDATE_FILE" 2>&1
+  )" || fail "update.sh failed to recover from unusable chezmoi:\n$output"
+
+  printf '%s\n' "$output" | grep -Fq 'chezmoi installed:' ||
+    fail "update.sh did not reinstall unusable chezmoi:\n$output"
+}
+
 assert_file "$SMOKE_TEST_FILE"
 assert_file "$UPDATE_FILE"
 [[ -x "$UPDATE_FILE" ]] || fail 'update.sh is not executable'
 bash -n "$UPDATE_FILE"
+assert_update_recovers_from_unusable_chezmoi
 
 assert_contains "$SMOKE_TEST_FILE" "CHEZMOI_VERSION=\"\${CHEZMOI_VERSION:-2.70.1}\""
 assert_contains "$SMOKE_TEST_FILE" '3bd054238e2a95548eee62a6c5b4d9d1352f2c6c69c6d32f3d1964878398f91a'

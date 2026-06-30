@@ -12,6 +12,10 @@ have_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
+have_usable_chezmoi() {
+  have_cmd chezmoi && chezmoi --version >/dev/null 2>&1
+}
+
 mark_configured() {
   configured_items+=("$1")
 }
@@ -129,7 +133,7 @@ set_default_shell_to_zsh_if_needed() {
 }
 
 install_chezmoi_if_needed() {
-  if have_cmd chezmoi; then
+  if have_usable_chezmoi; then
     return 0
   fi
   if ! have_cmd curl; then
@@ -137,10 +141,14 @@ install_chezmoi_if_needed() {
     return 1
   fi
 
+  if have_cmd chezmoi; then
+    mark_warning "existing chezmoi is not usable, installing chezmoi to $HOME/.local/bin"
+  fi
+
   mkdir -p "$HOME/.local/bin"
   sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
   export PATH="$HOME/.local/bin:$PATH"
-  if have_cmd chezmoi; then
+  if have_usable_chezmoi; then
     mark_configured "chezmoi installed: $HOME/.local/bin"
     return 0
   fi
