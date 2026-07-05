@@ -156,7 +156,7 @@ assert_contains "$SMOKE_TEST_FILE" "chmod 0755 \"\$temporary_dir\""
 assert_contains "$UPDATE_FILE" 'Configured:'
 assert_contains "$UPDATE_FILE" 'Warnings:'
 assert_contains "$UPDATE_FILE" 'No unapplied settings found.'
-assert_contains "$UPDATE_FILE" 'chezmoi -S "$script_dir" apply'
+assert_contains "$UPDATE_FILE" "chezmoi -S \"\$script_dir\" apply"
 assert_contains "$UPDATE_FILE" 'dotfiles applied'
 assert_contains "$UPDATE_FILE" 'zsh dependencies installed'
 
