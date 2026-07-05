@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+fastfetch_bin="${FASTFETCH_BIN:-$HOME/.local/bin/fastfetch}"
+config_file="${FASTFETCH_CONFIG_FILE:-$HOME/.config/fastfetch/wezterm.jsonc}"
+wide_threshold="${FASTFETCH_WIDE_THRESHOLD:-160}"
+
+if [[ ! -x "$fastfetch_bin" ]]; then
+  fastfetch_bin="$(command -v fastfetch 2>/dev/null || true)"
+fi
+
+if [[ -z "$fastfetch_bin" || ! -r "$config_file" ]]; then
+  exit 0
+fi
+
+citron_logo="$HOME/.config/wezterm/citron.txt"
+if [[ -x "$HOME/.local/bin/wezterm-citron-logo" ]]; then
+  citron_logo="$("$HOME/.local/bin/wezterm-citron-logo")"
+fi
+
+columns="${COLUMNS:-}"
+if [[ -z "$columns" || ! "$columns" =~ ^[0-9]+$ ]]; then
+  columns="$(tput cols 2>/dev/null || printf '0')"
+fi
+
+logo_position="${FASTFETCH_LOGO_POSITION:-}"
+if [[ -z "$logo_position" ]]; then
+  if [[ "$columns" =~ ^[0-9]+$ && "$columns" -ge "$wide_threshold" ]]; then
+    logo_position="left"
+  else
+    logo_position="top"
+  fi
+fi
+
+exec "$fastfetch_bin" \
+  --config "$config_file" \
+  --file-raw "$citron_logo" \
+  --logo-position "$logo_position" \
+  "$@"

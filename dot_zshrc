@@ -74,6 +74,15 @@ alias gb='git branch'
 alias gp='git push'
 alias gpl='git pull --rebase'
 
+# WezTerm 起動時と同じ fastfetch 表示を手動で出す
+ff() {
+  if [[ -x "$HOME/.local/bin/wezterm-fastfetch" ]]; then
+    "$HOME/.local/bin/wezterm-fastfetch" "$@"
+  else
+    fastfetch --config "$HOME/.config/fastfetch/wezterm.jsonc" "$@"
+  fi
+}
+
 # ディレクトリ名を指定して移動（同名が複数ある場合は候補を表示）
 cdd() {
   local name="${1:-A}"

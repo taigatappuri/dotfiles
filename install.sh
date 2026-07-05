@@ -108,6 +108,25 @@ install_chezmoi_if_missing() {
   fi
 }
 
+run_chezmoi_source_script() {
+  local target_path="$1"
+  local description="$2"
+  local source_path
+
+  source_path="$(chezmoi source-path "$target_path" 2>/dev/null || true)"
+
+  if [[ -n "$source_path" && -f "$source_path" ]]; then
+    log "$description"
+    bash "$source_path" || true
+    return 0
+  fi
+
+  if [[ -x "$target_path" ]]; then
+    log "$description"
+    "$target_path" || true
+  fi
+}
+
 repo="${1:-${CHEZMOI_REPO:-}}"
 
 log "Preparing zsh / git / curl..."
@@ -132,9 +151,9 @@ else
   chezmoi -S "$script_dir" apply
 fi
 
-if [[ -x "$HOME/.chezmoiscripts/10-install-zsh-deps.sh" ]]; then
-  log "Setting up oh-my-zsh and others..."
-  "$HOME/.chezmoiscripts/10-install-zsh-deps.sh" || true
-fi
+run_chezmoi_source_script "$HOME/.chezmoiscripts/10-install-zsh-deps.sh" \
+  "Setting up oh-my-zsh and others..."
+run_chezmoi_source_script "$HOME/.chezmoiscripts/20-install-wezterm-stack.sh" \
+  "Setting up WezTerm, fastfetch, and fonts..."
 
 log "Done (please log out/in if necessary to apply the default shell)"

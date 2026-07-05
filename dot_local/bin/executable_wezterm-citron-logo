@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+art_file="${CITRON_ART_FILE:-$HOME/.config/wezterm/citron.txt}"
+color_file="${CITRON_COLORS_FILE:-$HOME/.config/wezterm/citron-colors.conf}"
+cache_file="${CITRON_CACHE_FILE:-${XDG_CACHE_HOME:-$HOME/.cache}/fastfetch/citron.txt}"
+
+CITRON_LIGHT_COLOR=230
+CITRON_DARK_COLOR=208
+
+if [[ -r "$color_file" ]]; then
+  # 色番号だけを読む設定ファイル。任意コードの実行を避けるため、想定キーだけを取り込む。
+  while IFS='=' read -r key value; do
+    key="${key%%[[:space:]]*}"
+    value="${value%%#*}"
+    value="${value//[[:space:]]/}"
+    case "$key" in
+      CITRON_LIGHT_COLOR)
+        [[ "$value" =~ ^[0-9]+$ ]] && CITRON_LIGHT_COLOR="$value"
+        ;;
+      CITRON_DARK_COLOR)
+        [[ "$value" =~ ^[0-9]+$ ]] && CITRON_DARK_COLOR="$value"
+        ;;
+    esac
+  done <"$color_file"
+fi
+
+mkdir -p "$(dirname "$cache_file")"
+export CITRON_LIGHT_COLOR CITRON_DARK_COLOR
+
+perl -CSDA -Mutf8 -pe '
+  BEGIN {
+    $light = $ENV{"CITRON_LIGHT_COLOR"} || 230;
+    $dark = $ENV{"CITRON_DARK_COLOR"} || 208;
+  }
+  s/\e\[[0-9;]*m//g;
+  s/(░+)/"\e[38;5;${light}m$1\e[0m"/ge;
+  s/(▒+)/"\e[38;5;${dark}m$1\e[0m"/ge;
+' "$art_file" >"$cache_file"
+
+printf '%s\n' "$cache_file"

@@ -1,0 +1,127 @@
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+
+  "logo": {
+    "source": "~/.config/wezterm/citron.txt",
+    "type": "file-raw",
+    "position": "top",
+    "padding": {
+      "top": 1,
+      "right": 4
+    }
+  },
+
+  "display": {
+    "separator": "  ",
+    "key": {
+      "type": "string",
+      "width": 18,
+      "paddingLeft": 1
+    },
+    "color": {
+      "keys": "magenta",
+      "title": "bright_magenta",
+      "output": "white",
+      "separator": "yellow"
+    },
+    "size": {
+      "maxPrefix": "GB",
+      "ndigits": 1,
+      "spaceBeforeUnit": "always"
+    },
+    "percent": {
+      "type": 9
+    },
+    "bar": {
+      "width": 12,
+      "char": {
+        "elapsed": "━",
+        "total": "─"
+      }
+    }
+  },
+
+  "modules": [
+    {
+      "type": "custom",
+      "format": "{#35}tangelo{#}  {#220}workstation{#}"
+    },
+    {
+      "type": "title",
+      "key": "{#35}  User        {#}",
+      "format": "{user-name}@{host-name}"
+    },
+    {
+      "type": "os",
+      "key": "{#35}  OS          {#}"
+    },
+    {
+      "type": "kernel",
+      "key": "{#35}  Kernel      {#}",
+      "format": "{release}"
+    },
+    {
+      "type": "uptime",
+      "key": "{#35}󰅐  Uptime      {#}"
+    },
+    {
+      "type": "shell",
+      "key": "{#35}  Shell       {#}",
+      "format": "{pretty-name}"
+    },
+    {
+      "type": "terminal",
+      "key": "{#35}  Terminal    {#}"
+    },
+    {
+      "type": "terminalfont",
+      "key": "{#35}  Font        {#}",
+      "format": "{/name}{-}{/}{name}{?size} {size}{?}"
+    },
+    {
+      "type": "cpu",
+      "key": "{#35}  CPU         {#}",
+      "showPeCoreCount": true
+    },
+    {
+      "type": "memory",
+      "key": "{#35}  Memory      {#}",
+      "format": "{used} / {total}"
+    },
+    {
+      "type": "disk",
+      "key": "{#35}󰋊  Disk        {#}",
+      "folders": "/"
+    },
+    {
+      "type": "command",
+      "key": "{#35}󰩟  Network     {#}",
+      "text": "hostname -I | awk '{print $1}'",
+      "format": "{}"
+    },
+    {
+      "type": "command",
+      "key": "{#35}󰊢  Git         {#}",
+      "text": "git --version",
+      "format": "{~12}"
+    },
+    {
+      "type": "command",
+      "key": "{#35}󰃰  Today       {#}",
+      "text": "date '+%Y-%m-%d %H:%M'",
+      "format": "{}"
+    },
+    {
+      "type": "custom",
+      "format": "{#35}────────────────────────{#}"
+    },
+    {
+      "type": "colors",
+      "paddingLeft": 2,
+      "symbol": "circle"
+    },
+    {
+      "type": "break"
+    }
+  ]
+}

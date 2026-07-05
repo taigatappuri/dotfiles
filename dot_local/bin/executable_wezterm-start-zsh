@@ -1,0 +1,15 @@
+#!/usr/bin/env zsh
+
+# WezTerm から WSL/zsh を開くときの起動用スクリプト。
+# zsh の初期化順に依存せず、先に fastfetch を表示してからログインシェルへ入る。
+export WEZTERM_FASTFETCH=1
+export TERM_PROGRAM=WezTerm
+export FASTFETCH_SHOWN=1
+
+if [[ -t 1 ]] \
+  && [[ -x "$HOME/.local/bin/fastfetch" ]] \
+  && [[ -r "$HOME/.config/fastfetch/wezterm.jsonc" ]]; then
+  "$HOME/.local/bin/wezterm-fastfetch"
+fi
+
+exec /usr/bin/zsh -l
