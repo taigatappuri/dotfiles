@@ -84,7 +84,7 @@ config.cell_width = 1.0
 config.harfbuzz_features = {
   "calt",
   "liga",
-  "dlig",
+  -- UDEV Gothic NF の任意リガチャで「ます」が「〼」になるため dlig は使わない。
   "ss01",
   "ss02",
   "ss03",
@@ -157,6 +157,26 @@ config.max_fps = 120
 -- tmux 風の Leader。Ctrl-a を2回押すと Ctrl-a を送る。
 config.leader = { key = "a", mods = "CTRL", timeout_milliseconds = 1200 }
 
+local pane_shortcut_help = [[
+ペイン操作
+  Ctrl-a -       下に分割
+  Ctrl-a \       右に分割
+  Ctrl-a h/j/k/l ペイン移動
+  Ctrl-a ←/↓/↑/→ ペインサイズ変更
+  Ctrl-a z       ズーム切替
+  Ctrl-a q       ペインを閉じる
+
+その他
+  Ctrl-a c       新規タブ
+  Ctrl-a n/p     次/前のタブ
+  Ctrl-a 1..9    タブ番号へ移動
+  Ctrl-a ? / F1  このヘルプ
+]]
+
+local show_pane_shortcut_help = wezterm.action_callback(function(_window, pane)
+  pane:inject_output("\r\n" .. pane_shortcut_help:gsub("\n", "\r\n") .. "\r\n")
+end)
+
 config.keys = {
   { key = "a", mods = "LEADER|CTRL", action = act.SendKey({ key = "a", mods = "CTRL" }) },
 
@@ -191,6 +211,8 @@ config.keys = {
   { key = "s", mods = "LEADER", action = act.QuickSelect },
   { key = "Space", mods = "LEADER", action = act.ActivateCopyMode },
   { key = "r", mods = "LEADER", action = act.ReloadConfiguration },
+  { key = "?", mods = "LEADER|SHIFT", action = show_pane_shortcut_help },
+  { key = "F1", mods = "NONE", action = show_pane_shortcut_help },
   { key = "Enter", mods = "ALT", action = act.ToggleFullScreen },
 
   -- OS 標準に近いコピー・ペースト

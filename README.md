@@ -17,6 +17,7 @@ cd ~/dotfiles
 - chezmoiを`~/.local/bin`へ導入
 - このリポジトリの設定をHOMEへ適用
 - oh-my-zsh、Powerlevel10k、Zshプラグインを外部リポジトリから取得
+- WSL上ではWindows版WezTerm、Monaspace/UDEV Gothicフォント、fastfetch、WezTerm設定を導入
 
 リモートリポジトリを直接指定する場合は、引数または`CHEZMOI_REPO`を利用できます。
 
@@ -52,8 +53,38 @@ cd ~/dotfiles
 - Powerlevel10k
 - zsh-autosuggestions
 - zsh-syntax-highlighting
+- WezTermの赤紫テーマ、WSL Domain起動、fastfetch起動時表示
 - 指定名のディレクトリを検索して移動する`cdd`関数
 
-## 秘密情報
+## WezTerm
 
-APIキー、トークン、秘密鍵、パスワードをこのリポジトリへコミットしないでください。必要な秘密情報はchezmoiの暗号化機能、OSの認証情報ストア、または環境ごとの安全な保管先を利用します。
+WSL上で`./install.sh`を実行すると、次の内容をまとめて設定します。
+
+- Windows版WezTermを`winget`で導入
+- Windowsユーザーフォントへ`Monaspace Argon NF`と`UDEV Gothic NF`を導入
+- WSL側へ`fastfetch`を`~/.local/bin/fastfetch`として導入
+- Windows側の`C:\Users\<Windowsユーザー>\.config\wezterm\wezterm.lua`へ設定を配置
+- WSL側の`~/.config/wezterm/wezterm.lua`をWindows側設定へのシンボリックリンクにする
+
+WezTerm単体を再セットアップしたい場合:
+
+```bash
+bash ~/dotfiles/dot_chezmoiscripts/executable_20-install-wezterm-stack.sh
+```
+
+設定の説明は、インストール後に`~/.config/wezterm/README.md`を確認してください。
+
+fastfetch の citron AA の色を変える場合は、`~/.config/wezterm/citron-colors.conf` の数値だけを編集します。
+
+```sh
+# ░ の色。黄色がかった白。
+CITRON_LIGHT_COLOR=230
+
+# ▒ の色。濃いオレンジ。
+CITRON_DARK_COLOR=208
+```
+
+AA の形は `~/.config/wezterm/citron.txt` に置きます。`citron.txt` には ANSI エスケープを直接書かず、色は `citron-colors.conf` に分けます。
+
+fastfetch は端末幅が十分に広い時だけ、AA と情報を横並びにします。しきい値は `FASTFETCH_WIDE_THRESHOLD` で変更できます。既定値は `160` 桁です。
+
