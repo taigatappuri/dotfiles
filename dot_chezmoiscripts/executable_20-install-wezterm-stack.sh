@@ -131,7 +131,7 @@ if (-not $winget) {
 }
 
 Write-Host "Installing WezTerm with winget"
-winget install --id Wez.WezTerm --exact --source winget --accept-package-agreements --accept-source-agreements --silent
+winget install --id wez.wezterm --exact --source winget --accept-package-agreements --accept-source-agreements --silent
 PWSH
 }
 
@@ -142,6 +142,7 @@ install_windows_fonts() {
 
   powershell.exe -NoProfile -ExecutionPolicy Bypass -Command - <<'PWSH' | sed 's/\r$//'
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
@@ -163,7 +164,7 @@ function Install-FontArchive {
 
   try {
     Write-Host "Installing font archive: $Name"
-    Invoke-WebRequest -Uri $Url -OutFile $zip
+    Invoke-WebRequest -Uri $Url -OutFile $zip -TimeoutSec 120
     [System.IO.Compression.ZipFile]::ExtractToDirectory($zip, $extract)
 
     Get-ChildItem -Path $extract -Recurse -File |
@@ -185,7 +186,7 @@ function Get-LatestReleaseAssetUrl {
     [Parameter(Mandatory = $true)][string]$AssetPattern
   )
 
-  $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repository/releases/latest"
+  $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repository/releases/latest" -TimeoutSec 30
   $asset = $release.assets |
     Where-Object { $_.name -match $AssetPattern } |
     Select-Object -First 1
