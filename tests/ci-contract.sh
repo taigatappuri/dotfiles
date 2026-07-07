@@ -7,6 +7,7 @@ readonly WORKFLOW_FILE="$REPOSITORY_ROOT/.github/workflows/ci.yml"
 readonly DEPENDABOT_FILE="$REPOSITORY_ROOT/.github/dependabot.yml"
 readonly SMOKE_TEST_FILE="$REPOSITORY_ROOT/tests/smoke.sh"
 readonly UPDATE_FILE="$REPOSITORY_ROOT/update.sh"
+readonly WEZTERM_STACK_FILE="$REPOSITORY_ROOT/dot_chezmoiscripts/executable_20-install-wezterm-stack.sh"
 readonly CHEZMOI_IGNORE_FILE="$REPOSITORY_ROOT/.chezmoiignore"
 readonly README_FILE="$REPOSITORY_ROOT/README.md"
 BACKTICK="$(printf '\140')"
@@ -140,8 +141,10 @@ EOF
 
 assert_file "$SMOKE_TEST_FILE"
 assert_file "$UPDATE_FILE"
+assert_file "$WEZTERM_STACK_FILE"
 [[ -x "$UPDATE_FILE" ]] || fail 'update.sh is not executable'
 bash -n "$UPDATE_FILE"
+bash -n "$WEZTERM_STACK_FILE"
 assert_update_recovers_from_unusable_chezmoi
 
 assert_contains "$SMOKE_TEST_FILE" "CHEZMOI_VERSION=\"\${CHEZMOI_VERSION:-2.70.1}\""
@@ -159,6 +162,13 @@ assert_contains "$UPDATE_FILE" 'No unapplied settings found.'
 assert_contains "$UPDATE_FILE" "chezmoi -S \"\$script_dir\" apply"
 assert_contains "$UPDATE_FILE" 'dotfiles applied'
 assert_contains "$UPDATE_FILE" 'zsh dependencies installed'
+assert_contains "$WEZTERM_STACK_FILE" 'function Get-FontRegistryName'
+assert_contains "$WEZTERM_STACK_FILE" 'MonaspiceAr Nerd Font Mono'
+assert_contains "$WEZTERM_STACK_FILE" '-creplace "([a-z])([A-Z])"'
+assert_contains "$WEZTERM_STACK_FILE" 'if (-not (Test-Path $destination))'
+assert_contains "$WEZTERM_STACK_FILE" '-Value $destination'
+assert_not_contains "$WEZTERM_STACK_FILE" '-Value $_.Name'
+assert_contains "$WEZTERM_STACK_FILE" 'if [[ -r "$repo_template_dir/wezterm.lua" ]]; then'
 
 assert_not_contains "$REPOSITORY_ROOT/uninstall.sh" "log \"- ${BACKTICK}chezmoi purge${BACKTICK}"
 assert_not_contains "$REPOSITORY_ROOT/uninstall.sh" "log \"${BACKTICK}chezmoi purge${BACKTICK}"

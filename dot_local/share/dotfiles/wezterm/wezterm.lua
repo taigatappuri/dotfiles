@@ -69,9 +69,10 @@ config.window_padding = {
   bottom = 8,
 }
 
--- 英数字は Monaspace Argon、 日本語は UDEV Gothic NF にフォールバックする。
+-- Nerd Fonts 版 Monaspace Argon は family 名が MonaspiceAr Nerd Font Mono になる。
+-- 英数字は MonaspiceAr、 日本語は UDEV Gothic NF にフォールバックする。
 config.font = wezterm.font_with_fallback({
-  "Monaspace Argon NF",
+  "MonaspiceAr Nerd Font Mono",
   "UDEV Gothic NF",
   "JetBrainsMono Nerd Font",
   "CaskaydiaCove Nerd Font",

@@ -145,10 +145,53 @@ $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
+Add-Type -AssemblyName System.Drawing
 
 $fontDir = Join-Path $env:LOCALAPPDATA "Microsoft\Windows\Fonts"
 $fontRegistry = "HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts"
 New-Item -ItemType Directory -Force -Path $fontDir | Out-Null
+
+function Convert-FontStyleName {
+  param([Parameter(Mandatory = $true)][string]$Style)
+
+  return ($Style -creplace "([a-z])([A-Z])", '$1 $2')
+}
+
+function Get-FontMetadataFamily {
+  param([Parameter(Mandatory = $true)][string]$Path)
+
+  $privateFonts = New-Object System.Drawing.Text.PrivateFontCollection
+  $privateFonts.AddFontFile($Path)
+  return $privateFonts.Families[0].Name
+}
+
+function Get-FontRegistryName {
+  param(
+    [Parameter(Mandatory = $true)][System.IO.FileInfo]$File,
+    [Parameter(Mandatory = $true)][string]$Kind
+  )
+
+  $family = $null
+  $style = "Regular"
+
+  if ($File.BaseName -match "^(Monaspice[A-Za-z]+)NerdFont(Mono|Propo)?-(.+)$") {
+    $family = "$($Matches[1]) Nerd Font"
+    if ($Matches[2]) {
+      $family = "$family $($Matches[2])"
+    }
+    $style = Convert-FontStyleName $Matches[3]
+  } else {
+    $family = Get-FontMetadataFamily $File.FullName
+    if ($File.BaseName -match "-(.+)$") {
+      $style = Convert-FontStyleName $Matches[1]
+    }
+  }
+
+  if ($style -eq "Regular") {
+    return "$family ($Kind)"
+  }
+  return "$family $style ($Kind)"
+}
 
 function Install-FontArchive {
   param(
@@ -171,9 +214,16 @@ function Install-FontArchive {
       Where-Object { $_.Name -match $Pattern } |
       ForEach-Object {
         $destination = Join-Path $fontDir $_.Name
-        Copy-Item $_.FullName $destination -Force
+        if (-not (Test-Path $destination)) {
+          Copy-Item $_.FullName $destination
+        }
         $kind = if ($_.Extension -ieq ".otf") { "OpenType" } else { "TrueType" }
-        New-ItemProperty -Path $fontRegistry -Name "$($_.BaseName) ($kind)" -Value $_.Name -PropertyType String -Force | Out-Null
+        $registryName = Get-FontRegistryName -File $_ -Kind $kind
+        $legacyRegistryName = "$($_.BaseName) ($kind)"
+        if ($legacyRegistryName -ne $registryName) {
+          Remove-ItemProperty -Path $fontRegistry -Name $legacyRegistryName -ErrorAction SilentlyContinue
+        }
+        New-ItemProperty -Path $fontRegistry -Name $registryName -Value $destination -PropertyType String -Force | Out-Null
       }
   } finally {
     Remove-Item -Recurse -Force $work -ErrorAction SilentlyContinue
@@ -205,8 +255,12 @@ function Test-FontRegistered {
   return [bool]($properties | Where-Object { $_ -like $Pattern } | Select-Object -First 1)
 }
 
-if (Test-FontRegistered "*Monaspace*Argon*") {
-  Write-Host "Monaspace Argon NF already installed"
+if (
+  (Test-FontRegistered "*MonaspiceAr Nerd Font Mono (OpenType)") -and
+  (Test-FontRegistered "*MonaspiceAr Nerd Font Mono Bold (OpenType)") -and
+  (Test-FontRegistered "*MonaspiceAr Nerd Font Mono Italic (OpenType)")
+) {
+  Write-Host "MonaspiceAr Nerd Font Mono already installed"
 } else {
   Install-FontArchive `
     -Name "Monaspace Nerd Font" `
@@ -214,7 +268,7 @@ if (Test-FontRegistered "*Monaspace*Argon*") {
     -Pattern ".*\.(ttf|otf)$"
 }
 
-if (Test-FontRegistered "*UDEV*Gothic*NF*") {
+if (Test-FontRegistered "*UDEV Gothic NF (TrueType)") {
   Write-Host "UDEV Gothic NF already installed"
 } else {
   $udevUrl = Get-LatestReleaseAssetUrl `
@@ -247,7 +301,7 @@ install_wezterm_config() {
 
   script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
   repo_template_dir="$(cd -- "$script_dir/.." 2>/dev/null && pwd -P)/dot_local/share/dotfiles/wezterm"
-  if [[ ! -r "$template" && -r "$repo_template_dir/wezterm.lua" ]]; then
+  if [[ -r "$repo_template_dir/wezterm.lua" ]]; then
     template_dir="$repo_template_dir"
     template="$template_dir/wezterm.lua"
     readme="$template_dir/README.md"

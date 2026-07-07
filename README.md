@@ -61,7 +61,7 @@ cd ~/dotfiles
 WSL上で`./install.sh`を実行すると、次の内容をまとめて設定します。
 
 - Windows版WezTermを`winget`で導入
-- Windowsユーザーフォントへ`Monaspace Argon NF`と`UDEV Gothic NF`を導入
+- Windowsユーザーフォントへ`MonaspiceAr Nerd Font Mono`と`UDEV Gothic NF`を導入
 - WSL側へ`fastfetch`を`~/.local/bin/fastfetch`として導入
 - Windows側の`C:\Users\<Windowsユーザー>\.config\wezterm\wezterm.lua`へ設定を配置
 - WSL側の`~/.config/wezterm/wezterm.lua`をWindows側設定へのシンボリックリンクにする
