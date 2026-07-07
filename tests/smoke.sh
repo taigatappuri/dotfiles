@@ -133,6 +133,36 @@ verify_shell_syntax() {
   zsh -n "$TEST_HOME/.zshrc" "$TEST_HOME/.p10k.zsh"
 }
 
+verify_path_order() {
+  local path_output
+  local npm_index
+  local local_index
+  local usr_index
+
+  path_output="$(
+    run_as_test_user sh -c '. "$HOME/.local/bin/env"; printf "%s\n" "$PATH"'
+  )"
+  IFS=: read -r -a path_entries <<<"$path_output"
+
+  npm_index=-1
+  local_index=-1
+  usr_index=-1
+  for i in "${!path_entries[@]}"; do
+    case "${path_entries[$i]}" in
+      "$TEST_HOME/.npm-global/bin") npm_index="$i" ;;
+      "$TEST_HOME/.local/bin") local_index="$i" ;;
+      /usr/bin) usr_index="$i" ;;
+    esac
+  done
+
+  [[ "$npm_index" -ge 0 ]] ||
+    fail '.npm-global/bin was not added to PATH'
+  [[ "$local_index" -ge 0 ]] ||
+    fail '.local/bin was not added to PATH'
+  [[ "$npm_index" -lt "$local_index" && "$npm_index" -lt "$usr_index" ]] ||
+    fail ".npm-global/bin does not take precedence in PATH: $path_output"
+}
+
 main() (
   local temporary_dir
   local source_copy
@@ -161,6 +191,7 @@ main() (
   verify_idempotency "$source_copy" "$before_hashes" "$after_hashes"
   verify_update_script "$source_copy" "$before_hashes" "$after_hashes"
   verify_shell_syntax
+  verify_path_order
 
   log 'Smoke test passed'
 )

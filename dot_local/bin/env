@@ -8,3 +8,11 @@ case ":${PATH}:" in
     export PATH="$HOME/.local/bin:$PATH"
     ;;
 esac
+
+case ":${PATH}:" in
+  *:"$HOME/.npm-global/bin":*) ;;
+  *)
+    # npm globalで導入したCLIを古いローカル/システム側の実行ファイルより優先する
+    export PATH="$HOME/.npm-global/bin:$PATH"
+    ;;
+esac
