@@ -69,31 +69,34 @@ config.window_padding = {
   bottom = 8,
 }
 
--- Nerd Fonts 版 Monaspace Argon は family 名が MonaspiceAr Nerd Font Mono になる。
--- 英数字は MonaspiceAr、 日本語は UDEV Gothic NF にフォールバックする。
+-- 英数字と日本語でメトリクスがずれないよう、日本語対応の等幅フォントを
+-- 主フォントにする。本文には Nerd Fonts 加工前の UDEV Gothic を使い、加工時に
+-- 追加された小さな記号グリフが一部の日本語文字より優先されるのを防ぐ。
+-- Nerd Font のアイコンは WezTerm 内蔵の Symbols Nerd Font Mono が補完する。
+local text_font = wezterm.target_triple:find("windows")
+    and "UDEV Gothic"
+  -- Ubuntu 22.04 の Mono TTC は一部の漢字を半角の字送りで返すため使わない。
+  or "Noto Sans CJK JP"
+
 config.font = wezterm.font_with_fallback({
-  "MonaspiceAr Nerd Font Mono",
-  "UDEV Gothic NF",
-  "JetBrainsMono Nerd Font",
-  "CaskaydiaCove Nerd Font",
-  "Hack Nerd Font",
-  "DejaVu Sans Mono",
+  -- Noto Sans CJK JP の英字はプロポーショナルなので、英数字は等幅に固定する。
+  "JetBrains Mono",
+  text_font,
+  "Symbols Nerd Font Mono",
 })
-config.font_size = 9.5
-config.line_height = 1.08
-config.cell_width = 1.0
+config.font_size = 10.5
+-- アクセント記号や日本語グリフの上端がセル境界で切れない余白を確保する。
+config.line_height = 1.20
+-- 全角2セルの正しい字送りを保ちつつ、文字間の余白を少し詰める。
+config.cell_width = 0.85
 config.harfbuzz_features = {
-  "calt",
-  "liga",
-  -- UDEV Gothic NF の任意リガチャで「ます」が「〼」になるため dlig は使わない。
-  "ss01",
-  "ss02",
-  "ss03",
-  "ss04",
-  "ss05",
-  "ss06",
-  "ss07",
-  "ss08",
+  -- WezTerm 20240203 と Noto Sans Mono CJK の組み合わせでは、一部の漢字列が
+  -- 2セルのまま半角相当の字送りでシェーピングされ、小さく見えることがある。
+  -- 端末表示では合字よりセル幅の安定性を優先する。
+  "calt=0",
+  "clig=0",
+  "liga=0",
+  "dlig=0",
 }
 config.freetype_load_target = "Light"
 config.freetype_render_target = "HorizontalLcd"
@@ -139,12 +142,12 @@ config.quick_select_patterns = {
 -- ホイール1刻みの移動量を小さくして、スクロールの体感をなめらかにする。
 config.mouse_bindings = {
   {
-    event = { Down = { streak = 1, button = { WheelUp = 1 } } },
+    event = { Down = { streak = 2, button = { WheelUp = 2 } } },
     mods = "NONE",
     action = act.ScrollByLine(-1),
   },
   {
-    event = { Down = { streak = 1, button = { WheelDown = 1 } } },
+    event = { Down = { streak = 2, button = { WheelDown = 2 } } },
     mods = "NONE",
     action = act.ScrollByLine(1),
   },
